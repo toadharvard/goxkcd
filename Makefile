@@ -1,6 +1,6 @@
 # Change these variables as necessary.
 MAIN_PACKAGE_PATH := ./goxkcd
-BINARY_NAME := goxkcd-bin
+BINARY_NAME := goxkcd
 
 ifeq (run,$(firstword $(MAKECMDGOALS)))
   # use the rest as arguments for "run"
