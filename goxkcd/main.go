@@ -10,6 +10,7 @@ import (
 
 func main() {
 	rawString := GetStringFromCLI()
+	fmt.Printf("Trying to detect language from string: \"%s\"\n", rawString)
 	usedLanguageCode, err := DetectUsedLanguageInISOCode639_1(rawString)
 	if err != nil {
 		fmt.Println("Error:", err)
