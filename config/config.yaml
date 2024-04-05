@@ -1,0 +1,6 @@
+json-database:
+  file-name: database.json
+
+xksd-com:
+  url: https://xkcd.com
+  language: en
