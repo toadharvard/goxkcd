@@ -77,7 +77,7 @@ func main() {
 	client := xkcdcom.New(cfg.XkcdCom)
 	limit = chooseLimit(client, limit)
 	comics := getComics(client, limit)
-	var repo Repo[comix.Comix] = repository.New("comics.json")
+	var repo Repo[comix.Comix] = repository.New(cfg.FileName)
 	err = repo.BulkInsert(comics)
 	if err != nil {
 		panic(err)
