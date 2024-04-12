@@ -11,18 +11,19 @@ type Comix struct {
 	Keywords []string `json:"keywords"`
 }
 
-func New(id int, url string, keywords []string) Comix {
-	return Comix{
+func New(id int, url string, keywords []string) *Comix {
+	return &Comix{
 		Id:       id,
 		URL:      url,
 		Keywords: keywords,
 	}
 }
 
-func FromComixInfo(comixInfo xkcdcom.ComixInfo) Comix {
+func FromComixInfo(stemmer *stemming.Stemmer, comixInfo *xkcdcom.ComixInfo) Comix {
 	keywords := []stemming.Token{}
-	keywords = append(keywords, stemming.StemString(comixInfo.SafeTitle, comixInfo.Language)...)
-	keywords = append(keywords, stemming.StemString(comixInfo.Transcript, comixInfo.Language)...)
+	keywords = append(keywords, stemmer.StemString(comixInfo.SafeTitle, comixInfo.Language)...)
+	keywords = append(keywords, stemmer.StemString(comixInfo.Transcript, comixInfo.Language)...)
+	keywords = append(keywords, stemmer.StemString(comixInfo.Alt, comixInfo.Language)...)
 
 	keywords = stemming.RemoveDuplicates(keywords)
 	return Comix{

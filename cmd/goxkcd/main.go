@@ -8,7 +8,8 @@ import (
 	"github.com/toadharvard/goxkcd/internal/config"
 	"github.com/toadharvard/goxkcd/internal/pkg/client/xkcdcom"
 	"github.com/toadharvard/goxkcd/internal/pkg/comix"
-	"github.com/toadharvard/goxkcd/internal/pkg/comix/repository"
+	repository "github.com/toadharvard/goxkcd/internal/pkg/comix/repository/json"
+	"github.com/toadharvard/goxkcd/internal/pkg/stemming"
 )
 
 func getValuesFromArgs() (int, bool, string) {
@@ -20,7 +21,7 @@ func getValuesFromArgs() (int, bool, string) {
 	return *limit, *shouldOutput, *configPath
 }
 
-func chooseLimit(client xkcdcom.XKSDClient, limit int) int {
+func chooseLimit(client *xkcdcom.XKCDClient, limit int) int {
 	lastNum, err := client.GetLastComixNum()
 	if err != nil {
 		panic(err)
@@ -34,7 +35,9 @@ func chooseLimit(client xkcdcom.XKSDClient, limit int) int {
 	return limit
 }
 
-func getComics(client xkcdcom.XKSDClient, limit int) []comix.Comix {
+func getComics(client *xkcdcom.XKCDClient, limit int) []comix.Comix {
+	stemmer := stemming.New()
+
 	ch := make(chan comix.Comix)
 	wg := sync.WaitGroup{}
 	wg.Add(limit)
@@ -42,7 +45,7 @@ func getComics(client xkcdcom.XKSDClient, limit int) []comix.Comix {
 		go func(id int) {
 			info, err := client.GetById(id)
 			if err == nil {
-				ch <- comix.FromComixInfo(info)
+				ch <- comix.FromComixInfo(stemmer, info)
 			}
 			wg.Done()
 		}(i)

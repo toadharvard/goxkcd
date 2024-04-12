@@ -5,9 +5,21 @@ import (
 
 	"github.com/kljensen/snowball"
 	"github.com/toadharvard/goxkcd/internal/config"
+	sw "github.com/toadharvard/stopwords-iso"
 )
 
-func Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
+type Stemmer struct {
+	stopwords sw.StopwordsMapping
+}
+
+func New() *Stemmer {
+	stopwords, _ := sw.NewStopwordsMapping()
+	stopwords["en"] = append(stopwords["en"], "alt")
+	stopwords["en"] = append(stopwords["en"], "text")
+	return &Stemmer{stopwords: stopwords}
+}
+
+func (s *Stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
 	stemmedTokens := []Token{}
 
 	snowballLang := getSnowballLanguageFromISOCode639_1(language)
@@ -22,11 +34,11 @@ func Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
 	return stemmedTokens, nil
 }
 
-func StemString(str string, language config.ISOCode639_1) []Token {
+func (s *Stemmer) StemString(str string, language config.ISOCode639_1) []Token {
 	tokens := Tokenize(str)
 	withoutDuplicates := RemoveDuplicates(tokens)
-	withoutStopwords, _ := RemoveStopwords(withoutDuplicates, language)
-	stemmedTokens, _ := Stem(withoutStopwords, language)
+	withoutStopwords, _ := s.RemoveStopwords(withoutDuplicates, language)
+	stemmedTokens, _ := s.Stem(withoutStopwords, language)
 	return stemmedTokens
 }
 
