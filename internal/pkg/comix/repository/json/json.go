@@ -44,13 +44,13 @@ func (r *ComixRepository) GetAll() ([]c.Comix, error) {
 	return comics, err
 }
 
-func (r *ComixRepository) GetById(id int) (c.Comix, error) {
+func (r *ComixRepository) GetByID(id int) (c.Comix, error) {
 	comics, err := r.GetAll()
 	if err != nil {
 		return c.Comix{}, err
 	}
 	for _, comix := range comics {
-		if comix.Id == id {
+		if comix.ID == id {
 			return comix, nil
 		}
 	}
@@ -74,5 +74,13 @@ func (r *ComixRepository) BulkInsert(comixList []c.Comix) error {
 
 func (r *ComixRepository) Exists() bool {
 	_, err := os.Stat(r.filePath)
-	return os.IsExist(err)
+	return !errors.Is(err, os.ErrNotExist)
+}
+
+func (r *ComixRepository) Size() int {
+	comics, err := r.GetAll()
+	if err != nil {
+		return 0
+	}
+	return len(comics)
 }

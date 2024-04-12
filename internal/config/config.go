@@ -13,8 +13,10 @@ type JSONDatabase struct {
 }
 
 type XkcdCom struct {
-	URL      string       `yaml:"url"`
-	Language ISOCode639_1 `yaml:"language"`
+	URL             string       `yaml:"url"`
+	BatchSize       int          `yaml:"batch-size"`
+	NumberOfWorkers int          `yaml:"number-of-workers"`
+	Language        ISOCode639_1 `yaml:"language"`
 }
 
 type Config struct {

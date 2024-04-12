@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/mmcdole/gofeed"
 	"github.com/toadharvard/goxkcd/internal/config"
@@ -20,15 +21,15 @@ type XKCDClient struct {
 func New(cfg config.XkcdCom) *XKCDClient {
 	client := &XKCDClient{
 		cfg:    cfg,
-		client: &http.Client{},
+		client: &http.Client{Timeout: 5 * time.Second},
 	}
 	return client
 }
 
-func (c *XKCDClient) GetById(id int) (comixInfo *ComixInfo, err error) {
+func (c *XKCDClient) GetByID(id int) (comixInfo *ComixInfo, err error) {
 	comixInfo = NewComixInfo(c.cfg.Language)
-	strId := strconv.Itoa(id)
-	urlPath, _ := url.JoinPath(c.cfg.URL, strId, "info.0.json")
+	strID := strconv.Itoa(id)
+	urlPath, _ := url.JoinPath(c.cfg.URL, strID, "info.0.json")
 
 	resp, err := c.client.Get(urlPath)
 	if err != nil {
