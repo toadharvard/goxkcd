@@ -13,12 +13,10 @@ type ComixInfo struct {
 	Title      string `json:"title"`
 	Day        string `json:"day"`
 	Language   string
-	Id         int
 }
 
-func NewComixInfo(id int, language string) ComixInfo {
-	return ComixInfo{
-		Id:       id,
+func NewComixInfo(language string) *ComixInfo {
+	return &ComixInfo{
 		Language: language,
 	}
 }

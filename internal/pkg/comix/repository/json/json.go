@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/google/renameio"
 	c "github.com/toadharvard/goxkcd/internal/pkg/comix"
 )
 
@@ -13,17 +14,22 @@ type ComixRepository struct {
 }
 
 func New(filePath string) *ComixRepository {
-	file, err := os.Create(filePath)
+	repo := ComixRepository{filePath: filePath}
+	if !repo.Exists() {
+		repo.Create()
+	}
+	return &repo
+}
+
+func (r *ComixRepository) Create() error {
+	file, err := os.Create(r.filePath)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	if err = encoder.Encode([]c.Comix{}); err != nil {
-		return nil
-	}
-	return &ComixRepository{filePath: filePath}
+	bytes, _ := json.Marshal([]c.Comix{})
+	renameio.WriteFile(r.filePath, bytes, 0644)
+	return err
 }
 
 func (r *ComixRepository) GetAll() ([]c.Comix, error) {
@@ -34,10 +40,8 @@ func (r *ComixRepository) GetAll() ([]c.Comix, error) {
 	}
 	defer file.Close()
 	decoder := json.NewDecoder(file)
-	if err = decoder.Decode(&comics); err != nil {
-		return nil, err
-	}
-	return comics, nil
+	err = decoder.Decode(&comics)
+	return comics, err
 }
 
 func (r *ComixRepository) GetById(id int) (c.Comix, error) {
@@ -52,19 +56,20 @@ func (r *ComixRepository) GetById(id int) (c.Comix, error) {
 	}
 	return c.Comix{}, errors.New("comix not found")
 }
+
 func (r *ComixRepository) BulkInsert(comixList []c.Comix) error {
 	comics, err := r.GetAll()
 	if err != nil {
 		return err
 	}
 	comics = append(comics, comixList...)
-	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	encoder := json.NewEncoder(file)
-	return encoder.Encode(comics)
+	bytes, _ := json.Marshal(comics)
+	return renameio.WriteFile(r.filePath, bytes, 0644)
 }
 
 func (r *ComixRepository) Exists() bool {

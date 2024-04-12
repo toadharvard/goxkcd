@@ -12,8 +12,8 @@ var wordSegmenter = regexp.MustCompile(`[\pL\p{Mc}\p{Mn}-_']+`)
 
 func Tokenize(str string) []Token {
 	words := strings.Fields(str)
-	resplitted := strings.Join(words, " ")
-	onlyAlphanumeric := alphanumericOnly.ReplaceAllString(resplitted, "")
+	splitted := strings.Join(words, " ")
+	onlyAlphanumeric := alphanumericOnly.ReplaceAllString(splitted, "")
 	words = wordSegmenter.FindAllString(onlyAlphanumeric, -1)
 	return words
 }
