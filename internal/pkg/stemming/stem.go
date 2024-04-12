@@ -2,24 +2,32 @@ package stemming
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/kljensen/snowball"
 	"github.com/toadharvard/goxkcd/internal/config"
 	sw "github.com/toadharvard/stopwords-iso"
 )
 
-type Stemmer struct {
+type stemmer struct {
 	stopwords sw.StopwordsMapping
 }
 
-func New() *Stemmer {
-	stopwords, _ := sw.NewStopwordsMapping()
-	stopwords["en"] = append(stopwords["en"], "alt")
-	stopwords["en"] = append(stopwords["en"], "text")
-	return &Stemmer{stopwords: stopwords}
+var onceStemmer sync.Once
+var stemmerInstance *stemmer
+
+func New() *stemmer {
+	onceStemmer.Do(func() {
+		stopwords, _ := sw.NewStopwordsMapping()
+		stopwords["en"] = append(stopwords["en"], "alt")
+		stopwords["en"] = append(stopwords["en"], "text")
+		stopwords["en"] = append(stopwords["en"], "title")
+		stemmerInstance = &stemmer{stopwords: stopwords}
+	})
+	return stemmerInstance
 }
 
-func (s *Stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
+func (s *stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
 	stemmedTokens := []Token{}
 
 	snowballLang := getSnowballLanguageFromISOCode639_1(language)
@@ -34,10 +42,10 @@ func (s *Stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, e
 	return stemmedTokens, nil
 }
 
-func (s *Stemmer) StemString(str string, language config.ISOCode639_1) []Token {
+func (s *stemmer) StemString(str string, language config.ISOCode639_1) []Token {
 	tokens := Tokenize(str)
 	withoutDuplicates := RemoveDuplicates(tokens)
-	withoutStopwords, _ := s.RemoveStopwords(withoutDuplicates, language)
+	withoutStopwords, _ := s.removeStopwords(withoutDuplicates, language)
 	stemmedTokens, _ := s.Stem(withoutStopwords, language)
 	return stemmedTokens
 }

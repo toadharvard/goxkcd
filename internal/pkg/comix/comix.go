@@ -6,20 +6,22 @@ import (
 )
 
 type Comix struct {
-	Id       int      `json:"id"`
+	ID       int      `json:"id"`
 	URL      string   `json:"url"`
 	Keywords []string `json:"keywords"`
 }
 
 func New(id int, url string, keywords []string) *Comix {
 	return &Comix{
-		Id:       id,
+		ID:       id,
 		URL:      url,
 		Keywords: keywords,
 	}
 }
 
-func FromComixInfo(stemmer *stemming.Stemmer, comixInfo *xkcdcom.ComixInfo) Comix {
+func FromComixInfo(comixInfo *xkcdcom.ComixInfo) Comix {
+	stemmer := stemming.New()
+
 	keywords := []stemming.Token{}
 	keywords = append(keywords, stemmer.StemString(comixInfo.SafeTitle, comixInfo.Language)...)
 	keywords = append(keywords, stemmer.StemString(comixInfo.Transcript, comixInfo.Language)...)
@@ -27,7 +29,7 @@ func FromComixInfo(stemmer *stemming.Stemmer, comixInfo *xkcdcom.ComixInfo) Comi
 
 	keywords = stemming.RemoveDuplicates(keywords)
 	return Comix{
-		Id:       comixInfo.Num,
+		ID:       comixInfo.Num,
 		URL:      comixInfo.Img,
 		Keywords: keywords,
 	}
