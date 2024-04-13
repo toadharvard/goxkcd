@@ -25,6 +25,7 @@ func writeMissingIDs(
 	repo Repo[comix.Comix],
 	limit int,
 ) error {
+	defer close(missing)
 	allComics, err := repo.GetAll()
 	if err != nil {
 		return err
@@ -34,22 +35,20 @@ func writeMissingIDs(
 		exist[comix.ID] = true
 	}
 
-outer:
 	for i := 1; i <= limit; i++ {
 		select {
 		case <-ctx.Done():
-			break outer
+			return ctx.Err()
 		default:
 			if !exist[i] {
 				missing <- i
 			}
 		}
 	}
-	close(missing)
 	return nil
 }
 
-func writeComicsBatch(
+func fetchComicsBatch(
 	ctx context.Context,
 	client *xkcdcom.XKCDClient,
 	ids <-chan int,
@@ -57,26 +56,32 @@ func writeComicsBatch(
 	batchSize int,
 ) {
 	batch := []comix.Comix{}
+	sendBatch := func() {
+		if len(batch) > 0 {
+			batches <- batch
+			batch = []comix.Comix{}
+		}
+	}
+	defer sendBatch()
 
-outer:
-	for id := range ids {
+	for {
 		select {
-		case <-ctx.Done():
-			break outer
-		default:
-			info, err := client.GetByID(id)
+		case id, ok := <-ids:
+			if !ok {
+				return
+			}
+
+			info, err := client.GetByID(ctx, id)
 			if err == nil {
 				batch = append(batch, comix.FromComixInfo(info))
 			}
-			if len(batch) == batchSize {
-				batches <- batch
-				batch = []comix.Comix{}
-			}
-		}
-	}
 
-	if len(batch) > 0 {
-		batches <- batch
+			if len(batch) == batchSize {
+				sendBatch()
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -99,7 +104,7 @@ func run(cfg *config.Config) {
 	wg.Add(cfg.NumberOfWorkers)
 	for i := 0; i < cfg.NumberOfWorkers; i++ {
 		go func() {
-			writeComicsBatch(ctx, client, missingComixIds, batches, cfg.BatchSize)
+			fetchComicsBatch(ctx, client, missingComixIds, batches, cfg.BatchSize)
 			wg.Done()
 		}()
 	}
@@ -108,7 +113,6 @@ func run(cfg *config.Config) {
 		wg.Wait()
 		close(batches)
 	}()
-
 	for batch := range batches {
 		err := repo.BulkInsert(batch)
 		if err != nil {

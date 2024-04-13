@@ -1,6 +1,7 @@
 package xkcdcom
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,12 +27,17 @@ func New(cfg config.XkcdCom) *XKCDClient {
 	return client
 }
 
-func (c *XKCDClient) GetByID(id int) (comixInfo *ComixInfo, err error) {
+func (c *XKCDClient) GetByID(ctx context.Context, id int) (comixInfo *ComixInfo, err error) {
 	comixInfo = NewComixInfo(c.cfg.Language)
 	strID := strconv.Itoa(id)
 	urlPath, _ := url.JoinPath(c.cfg.URL, strID, "info.0.json")
 
-	resp, err := c.client.Get(urlPath)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlPath, nil)
+	if err != nil {
+		return
+	}
+
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -45,6 +51,7 @@ func (c *XKCDClient) GetByID(id int) (comixInfo *ComixInfo, err error) {
 	err = json.NewDecoder(resp.Body).Decode(&comixInfo)
 	return
 }
+
 
 func (c *XKCDClient) GetLastComixNum() (guid int, err error) {
 	urlPath, err := url.JoinPath(c.cfg.URL, "rss.xml")
