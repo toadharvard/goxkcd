@@ -4,5 +4,5 @@ json-database:
 xksd-com:
   url: https://xkcd.com
   language: en
-  batch-size: 20
-  number-of-workers: 10
+  batch-size: 50
+  number-of-workers: 50

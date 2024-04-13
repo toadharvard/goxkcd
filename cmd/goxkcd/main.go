@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
+	"os"
+	"os/signal"
 	"sync"
 
 	"github.com/toadharvard/goxkcd/internal/config"
@@ -17,7 +19,12 @@ func getValuesFromArgs() string {
 	return *configPath
 }
 
-func writeMissingIds(missing chan<- int, repo Repo[comix.Comix], limit int) error {
+func writeMissingIDs(
+	ctx context.Context,
+	missing chan<- int,
+	repo Repo[comix.Comix],
+	limit int,
+) error {
 	allComics, err := repo.GetAll()
 	if err != nil {
 		return err
@@ -27,27 +34,44 @@ func writeMissingIds(missing chan<- int, repo Repo[comix.Comix], limit int) erro
 		exist[comix.ID] = true
 	}
 
+outer:
 	for i := 1; i <= limit; i++ {
-		if !exist[i] {
-			missing <- i
+		select {
+		case <-ctx.Done():
+			break outer
+		default:
+			if !exist[i] {
+				missing <- i
+			}
 		}
 	}
 	close(missing)
 	return nil
 }
 
-func writeComicsBatch(client *xkcdcom.XKCDClient, ids <-chan int, batches chan<- []comix.Comix, batchSize int) {
+func writeComicsBatch(
+	ctx context.Context,
+	client *xkcdcom.XKCDClient,
+	ids <-chan int,
+	batches chan<- []comix.Comix,
+	batchSize int,
+) {
 	batch := []comix.Comix{}
 
+outer:
 	for id := range ids {
-		info, err := client.GetByID(id)
-		if err == nil {
-			batch = append(batch, comix.FromComixInfo(info))
-		}
-
-		if len(batch) == batchSize {
-			batches <- batch
-			batch = []comix.Comix{}
+		select {
+		case <-ctx.Done():
+			break outer
+		default:
+			info, err := client.GetByID(id)
+			if err == nil {
+				batch = append(batch, comix.FromComixInfo(info))
+			}
+			if len(batch) == batchSize {
+				batches <- batch
+				batch = []comix.Comix{}
+			}
 		}
 	}
 
@@ -57,6 +81,9 @@ func writeComicsBatch(client *xkcdcom.XKCDClient, ids <-chan int, batches chan<-
 }
 
 func run(cfg *config.Config) {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	var repo Repo[comix.Comix] = repository.New(cfg.FileName)
 	client := xkcdcom.New(cfg.XkcdCom)
 	limit, err := client.GetLastComixNum()
@@ -66,13 +93,13 @@ func run(cfg *config.Config) {
 
 	missingComixIds := make(chan int)
 	batches := make(chan []comix.Comix)
-	go writeMissingIds(missingComixIds, repo, limit)
+	go writeMissingIDs(ctx, missingComixIds, repo, limit)
 
 	wg := sync.WaitGroup{}
 	wg.Add(cfg.NumberOfWorkers)
 	for i := 0; i < cfg.NumberOfWorkers; i++ {
 		go func() {
-			writeComicsBatch(client, missingComixIds, batches, cfg.BatchSize)
+			writeComicsBatch(ctx, client, missingComixIds, batches, cfg.BatchSize)
 			wg.Done()
 		}()
 	}
@@ -87,7 +114,6 @@ func run(cfg *config.Config) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(repo.Size())
 	}
 }
 
