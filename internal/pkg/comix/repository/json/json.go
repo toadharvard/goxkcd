@@ -13,12 +13,12 @@ type ComixRepository struct {
 	filePath string
 }
 
-func New(filePath string) *ComixRepository {
-	repo := ComixRepository{filePath: filePath}
+func New(filePath string) (repo *ComixRepository, err error) {
+	repo = &ComixRepository{filePath: filePath}
 	if !repo.Exists() {
-		repo.Create()
+		err = repo.Create()
 	}
-	return &repo
+	return
 }
 
 func (r *ComixRepository) Create() error {
@@ -28,7 +28,7 @@ func (r *ComixRepository) Create() error {
 	}
 	defer file.Close()
 	bytes, _ := json.Marshal([]c.Comix{})
-	renameio.WriteFile(r.filePath, bytes, 0644)
+	err = renameio.WriteFile(r.filePath, bytes, 0644)
 	return err
 }
 
