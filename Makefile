@@ -54,7 +54,6 @@ test/cover:
 .PHONY: build
 ## build: build the application
 build:
-	# Include additional build steps, like TypeScript, SCSS or Tailwind compilation here...
 	go build -o=/tmp/bin/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
 	echo "Built /tmp/bin/${BINARY_NAME}"
 
