@@ -89,22 +89,32 @@ func run(cfg *config.Config) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	var repo Repo[comix.Comix] = repository.New(cfg.FileName)
+	var repo Repo[comix.Comix]
+	repo, err := repository.New(cfg.FileName)
+	if err != nil {
+		panic(err)
+	}
+
 	client := xkcdcom.New(cfg.XkcdCom)
 	limit, err := client.GetLastComixNum()
 	if err != nil {
 		panic(err)
 	}
 
-	missingComixIds := make(chan int)
+	missingComixIDs := make(chan int)
 	batches := make(chan []comix.Comix)
-	go writeMissingIDs(ctx, missingComixIds, repo, limit)
+	go func() {
+		err := writeMissingIDs(ctx, missingComixIDs, repo, limit)
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	wg := sync.WaitGroup{}
 	wg.Add(cfg.NumberOfWorkers)
 	for i := 0; i < cfg.NumberOfWorkers; i++ {
 		go func() {
-			fetchComicsBatch(ctx, client, missingComixIds, batches, cfg.BatchSize)
+			fetchComicsBatch(ctx, client, missingComixIDs, batches, cfg.BatchSize)
 			wg.Done()
 		}()
 	}
