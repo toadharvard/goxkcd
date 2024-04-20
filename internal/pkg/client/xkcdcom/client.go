@@ -15,22 +15,25 @@ import (
 )
 
 type XKCDClient struct {
-	cfg    config.XkcdCom
-	client *http.Client
+	URL      string
+	Language config.ISOCode639_1
+	Timeout  time.Duration
+	client   *http.Client
 }
 
-func New(cfg config.XkcdCom) *XKCDClient {
+func New(URL string, language config.ISOCode639_1, timeout time.Duration) *XKCDClient {
 	client := &XKCDClient{
-		cfg:    cfg,
-		client: &http.Client{Timeout: 5 * time.Second},
+		URL:      URL,
+		Language: language,
+		client:   &http.Client{Timeout: timeout},
 	}
 	return client
 }
 
 func (c *XKCDClient) GetByID(ctx context.Context, id int) (comixInfo *ComixInfo, err error) {
-	comixInfo = NewComixInfo(c.cfg.Language)
+	comixInfo = NewComixInfo(c.Language)
 	strID := strconv.Itoa(id)
-	urlPath, _ := url.JoinPath(c.cfg.URL, strID, "info.0.json")
+	urlPath, _ := url.JoinPath(c.URL, strID, "info.0.json")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlPath, nil)
 	if err != nil {
@@ -52,9 +55,8 @@ func (c *XKCDClient) GetByID(ctx context.Context, id int) (comixInfo *ComixInfo,
 	return
 }
 
-
 func (c *XKCDClient) GetLastComixNum() (guid int, err error) {
-	urlPath, err := url.JoinPath(c.cfg.URL, "rss.xml")
+	urlPath, err := url.JoinPath(c.URL, "rss.xml")
 	if err != nil {
 		return
 	}

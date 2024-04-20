@@ -62,5 +62,9 @@ build:
 run: build
 	/tmp/bin/${BINARY_NAME} $(RUN_ARGS)
 
+.PHONY: bench
+## bench: run benchmarks
+bench:
+	go test -bench=. ./... -v
 
 .DEFAULT_GOAL := build
