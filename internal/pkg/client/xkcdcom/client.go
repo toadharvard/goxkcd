@@ -17,7 +17,6 @@ import (
 type XKCDClient struct {
 	URL      string
 	Language config.ISOCode639_1
-	Timeout  time.Duration
 	client   *http.Client
 }
 
