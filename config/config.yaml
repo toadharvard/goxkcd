@@ -1,8 +1,12 @@
 json-database:
   file-name: database.json
 
+json-index:
+  file-name: index.json
+
 xksd-com:
   url: https://xkcd.com
   language: en
   batch-size: 50
   number-of-workers: 50
+  timeout: 5s

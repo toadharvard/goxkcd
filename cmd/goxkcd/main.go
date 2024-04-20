@@ -3,20 +3,28 @@ package main
 import (
 	"context"
 	"flag"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 
 	"github.com/toadharvard/goxkcd/internal/config"
 	"github.com/toadharvard/goxkcd/internal/pkg/client/xkcdcom"
 	"github.com/toadharvard/goxkcd/internal/pkg/comix"
-	repository "github.com/toadharvard/goxkcd/internal/pkg/comix/repository/json"
+	comixRepository "github.com/toadharvard/goxkcd/internal/pkg/comix/repository/json"
+	"github.com/toadharvard/goxkcd/internal/pkg/index"
+	indexRepository "github.com/toadharvard/goxkcd/internal/pkg/index/repository/json"
+	"github.com/toadharvard/goxkcd/internal/pkg/stemming"
 )
 
-func getValuesFromArgs() string {
+func getValuesFromArgs() (string, string, bool, int) {
 	configPath := flag.String("c", "config/config.yaml", "Config path")
+	stringToStem := flag.String("s", "", "String to stem")
+	usePreBuiltIndex := flag.Bool("i", true, "Use pre-built index")
+	suggestionsLimit := flag.Int("l", 10, "Suggestions limit")
 	flag.Parse()
-	return *configPath
+	return *configPath, *stringToStem, *usePreBuiltIndex, *suggestionsLimit
 }
 
 func writeMissingIDs(
@@ -85,29 +93,28 @@ func fetchComicsBatch(
 	}
 }
 
-func run(cfg *config.Config) {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+func downloadComics(ctx context.Context, cfg *config.Config) (err error) {
+	var repo Repo[comix.Comix] = comixRepository.New(cfg.JSONDatabase.FileName)
 
-	var repo Repo[comix.Comix]
-	repo, err := repository.New(cfg.FileName)
-	if err != nil {
-		panic(err)
+	if !repo.Exists() {
+		err = repo.Create()
 	}
 
-	client := xkcdcom.New(cfg.XkcdCom)
+	if err != nil {
+		return
+	}
+
+	client := xkcdcom.New(cfg.XKCDCom.URL, cfg.XKCDCom.Language, cfg.XKCDCom.Timeout)
 	limit, err := client.GetLastComixNum()
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	missingComixIDs := make(chan int)
 	batches := make(chan []comix.Comix)
+
 	go func() {
-		err := writeMissingIDs(ctx, missingComixIDs, repo, limit)
-		if err != nil {
-			panic(err)
-		}
+		err = writeMissingIDs(ctx, missingComixIDs, repo, limit)
 	}()
 
 	wg := sync.WaitGroup{}
@@ -123,15 +130,58 @@ func run(cfg *config.Config) {
 		wg.Wait()
 		close(batches)
 	}()
+
 	for batch := range batches {
-		err := repo.BulkInsert(batch)
+		err = repo.BulkInsert(batch)
 		if err != nil {
-			panic(err)
+			return
 		}
 	}
+	return nil
+}
+
+func buildIndex(cfg *config.Config) (err error) {
+	var repo Repo[comix.Comix] = comixRepository.New(cfg.JSONDatabase.FileName)
+
+	comics, err := repo.GetAll()
+	if err != nil {
+		return
+	}
+
+	index := index.FromComics(comics)
+	indexRepo := indexRepository.New(cfg.JSONIndex.FileName)
+	err = indexRepo.CreateOrUpdate(index)
+	return
+}
+
+func suggestComics(cfg *config.Config, searchQuery string, suggestionsLimit int) error {
+	keywords := stemming.New().StemString(searchQuery, cfg.Language)
+	indexRepo := indexRepository.New(cfg.JSONIndex.FileName)
+	var repo Repo[comix.Comix] = comixRepository.New(cfg.JSONDatabase.FileName)
+
+	index, err := indexRepo.GetIndex()
+	if err != nil {
+		return err
+	}
+	suggestions := index.GetRelevantIDs(keywords)
+	limit := min(suggestionsLimit, len(suggestions))
+	slog.Info("number of suggestions", "limit", limit)
+	for _, id := range suggestions[:limit] {
+		comix, err := repo.GetByID(id)
+		if err != nil {
+			return err
+		}
+		slog.Info(
+			"relevant comix",
+			"ID", comix.ID,
+			"URL", comix.URL,
+		)
+	}
+	return err
 }
 
 type Repo[T any] interface {
+	Create() error
 	BulkInsert([]T) error
 	GetAll() ([]T, error)
 	GetByID(int) (T, error)
@@ -139,12 +189,67 @@ type Repo[T any] interface {
 	Size() int
 }
 
-func main() {
-	configPath := getValuesFromArgs()
+func logElapsedTime(name string, f func()) {
+	start := time.Now()
+	f()
+	elapsed := time.Since(start)
+	slog.Info(name, "time", elapsed.String())
+}
 
+func Run(ctx context.Context, cfg *config.Config, query string, usePreBuiltIndex bool, suggestionsLimit int) {
+	var err error
+	logElapsedTime("download time", func() {
+		err = downloadComics(ctx, cfg)
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	if !usePreBuiltIndex || !indexRepository.New(cfg.JSONIndex.FileName).Exists() {
+		logElapsedTime(
+			"build index time",
+			func() {
+				err = buildIndex(cfg)
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	logElapsedTime("suggest comics time", func() {
+		err = suggestComics(cfg, query, suggestionsLimit)
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	lvl := new(slog.LevelVar)
+	lvl.Set(slog.LevelInfo)
+
+	logger := slog.New(
+		slog.NewJSONHandler(
+			os.Stdout,
+			&slog.HandlerOptions{
+				Level: lvl,
+			},
+		),
+	)
+
+	slog.SetDefault(logger)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	configPath, stringToStem, usePreBuiltIndex, suggestionsLimit := getValuesFromArgs()
 	cfg, err := config.New(configPath)
 	if err != nil {
 		panic(err)
 	}
-	run(cfg)
+
+	Run(ctx, cfg, stringToStem, usePreBuiltIndex, suggestionsLimit)
 }

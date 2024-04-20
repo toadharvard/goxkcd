@@ -13,11 +13,8 @@ type ComixRepository struct {
 	filePath string
 }
 
-func New(filePath string) (repo *ComixRepository, err error) {
+func New(filePath string) (repo *ComixRepository) {
 	repo = &ComixRepository{filePath: filePath}
-	if !repo.Exists() {
-		err = repo.Create()
-	}
 	return
 }
 
