@@ -1,4 +1,4 @@
-package json
+package indexer
 
 import (
 	"encoding/json"
@@ -6,19 +6,18 @@ import (
 	"os"
 
 	"github.com/google/renameio"
-	"github.com/toadharvard/goxkcd/internal/pkg/index"
+	"github.com/toadharvard/goxkcd/internal/entity"
 )
 
-type IndexRepository struct {
+type JsonRepo struct {
 	filePath string
 }
 
-func New(filePath string) (repo *IndexRepository) {
-	repo = &IndexRepository{filePath: filePath}
-	return
+func New(filePath string) (repo *JsonRepo) {
+	return &JsonRepo{filePath: filePath}
 }
 
-func (r *IndexRepository) CreateOrUpdate(i index.Index) error {
+func (r *JsonRepo) CreateOrUpdate(i *entity.Index) error {
 	file, err := os.Create(r.filePath)
 	if err != nil {
 		return err
@@ -29,8 +28,8 @@ func (r *IndexRepository) CreateOrUpdate(i index.Index) error {
 	return err
 }
 
-func (r *IndexRepository) GetIndex() (index.Index, error) {
-	i := index.New()
+func (r *JsonRepo) GetIndex() (*entity.Index, error) {
+	i := entity.NewIndex()
 	file, err := os.Open(r.filePath)
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func (r *IndexRepository) GetIndex() (index.Index, error) {
 	return i, err
 }
 
-func (r *IndexRepository) Exists() bool {
+func (r *JsonRepo) Exists() bool {
 	_, err := os.Stat(r.filePath)
 	return !errors.Is(err, os.ErrNotExist)
 }
