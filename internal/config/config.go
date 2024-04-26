@@ -1,13 +1,32 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"log/slog"
+
+	"github.com/toadharvard/goxkcd/pkg/iso6391"
+	"gopkg.in/yaml.v3"
 )
 
-type ISOCode639_1 = string
+type ISOCode6391 iso6391.ISOCode6391
+
+func (code *ISOCode6391) UnmarshalYAML(value *yaml.Node) error {
+	var str string
+	if err := value.Decode(&str); err != nil {
+		return fmt.Errorf("cannot decode ISO 639-1 code: %w", err)
+	}
+
+	parsed, err := iso6391.NewLanguage(str)
+	if err != nil {
+		return err
+	}
+
+	*code = ISOCode6391(parsed)
+	return nil
+}
 
 type JSONDatabase struct {
 	FileName string `yaml:"file-name"`
@@ -21,7 +40,7 @@ type XKCDCom struct {
 	URL             string        `yaml:"url"`
 	BatchSize       int           `yaml:"batch-size"`
 	NumberOfWorkers int           `yaml:"number-of-workers"`
-	Language        ISOCode639_1  `yaml:"language"`
+	Language        ISOCode6391   `yaml:"language"`
 	Timeout         time.Duration `yaml:"timeout"`
 }
 
@@ -46,5 +65,6 @@ func New(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	slog.Debug("config loaded", "config", config)
 	return config, nil
 }

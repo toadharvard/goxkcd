@@ -1,11 +1,10 @@
 package stemming
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/kljensen/snowball"
-	"github.com/toadharvard/goxkcd/internal/config"
+	"github.com/toadharvard/goxkcd/pkg/iso6391"
 	sw "github.com/toadharvard/stopwords-iso"
 )
 
@@ -27,13 +26,11 @@ func New() *stemmer {
 	return stemmerInstance
 }
 
-func (s *stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, error) {
+func (s *stemmer) Stem(tokens []Token, language iso6391.ISOCode6391) ([]Token, error) {
 	stemmedTokens := []Token{}
 
-	snowballLang := getSnowballLanguageFromISOCode639_1(language)
-
 	for _, Token := range tokens {
-		stemmed, err := snowball.Stem(Token, snowballLang, false)
+		stemmed, err := snowball.Stem(Token, language.Name, false)
 		if err != nil {
 			return stemmedTokens, err
 		}
@@ -42,33 +39,10 @@ func (s *stemmer) Stem(tokens []Token, language config.ISOCode639_1) ([]Token, e
 	return stemmedTokens, nil
 }
 
-func (s *stemmer) StemString(str string, language config.ISOCode639_1) []Token {
+func (s *stemmer) StemString(str string, language iso6391.ISOCode6391) []Token {
 	tokens := Tokenize(str)
 	withoutDuplicates := RemoveDuplicates(tokens)
 	withoutStopwords, _ := s.removeStopwords(withoutDuplicates, language)
 	stemmedTokens, _ := s.Stem(withoutStopwords, language)
 	return stemmedTokens
-}
-
-func getSnowballLanguageFromISOCode639_1(language config.ISOCode639_1) (newLang string) {
-	switch strings.ToUpper(language) {
-	case "EN":
-		newLang = "english"
-	case "ES":
-		newLang = "spanish"
-	case "FR":
-		newLang = "french"
-	case "RU":
-		newLang = "russian"
-	case "SV":
-		newLang = "swedish"
-	case "NO":
-		newLang = "norwegian"
-	case "HU":
-		newLang = "hungarian"
-	default:
-		newLang = "english"
-		return
-	}
-	return
 }
