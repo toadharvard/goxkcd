@@ -49,6 +49,7 @@ func Run(ctx context.Context, app *app.App, host string, port int, comixUpdateIn
 		}
 	}()
 
+	slog.Info("server started", "host", host, "port", port)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		slog.Error("server error", "err", err)
 		return err
