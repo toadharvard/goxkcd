@@ -21,9 +21,9 @@ func getValuesFromArgs() (string, string, int) {
 	return *configPath, *host, *port
 }
 
-func main() {
+func run() error {
 	lvl := new(slog.LevelVar)
-	lvl.Set(slog.LevelDebug)
+	lvl.Set(slog.LevelInfo)
 
 	logger := slog.New(
 		slog.NewJSONHandler(
@@ -42,12 +42,12 @@ func main() {
 	configPath, hostArg, portArg := getValuesFromArgs()
 	cfg, err := config.New(configPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	app, err := app.New(cfg)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	host := cfg.HttpServer.Host
@@ -61,7 +61,12 @@ func main() {
 	}
 
 	err = httpServer.Run(ctx, app, host, port, time.Minute)
-	if err != nil {
-		panic(err)
+	return err
+}
+
+func main() {
+	if err := run(); err != nil {
+		slog.Error("server error", "err", err)
+		os.Exit(1)
 	}
 }
