@@ -1,4 +1,4 @@
-package comix
+package json
 
 import (
 	"encoding/json"
