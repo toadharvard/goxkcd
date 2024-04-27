@@ -14,4 +14,4 @@ xkcd-com:
 http-server:
   host: localhost
   port: 8080
-  comix-update-interval: 1d
+  comix-update-interval: 24h
