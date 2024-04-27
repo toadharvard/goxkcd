@@ -16,19 +16,19 @@ type ComixRepo interface {
 	GetByID(int) (entity.Comix, error)
 }
 
-type SuggestComicsUC struct {
+type UseCase struct {
 	indexRepo IndexRepo
 	comixRepo ComixRepo
 }
 
-func New(indexRepo IndexRepo, comixRepo ComixRepo) *SuggestComicsUC {
-	return &SuggestComicsUC{
+func New(indexRepo IndexRepo, comixRepo ComixRepo) *UseCase {
+	return &UseCase{
 		indexRepo: indexRepo,
 		comixRepo: comixRepo,
 	}
 }
 
-func (u *SuggestComicsUC) Run(
+func (u *UseCase) Run(
 	language iso6391.ISOCode6391,
 	searchQuery string,
 	suggestionsLimit int,

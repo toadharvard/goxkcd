@@ -44,10 +44,17 @@ type XKCDCom struct {
 	Timeout         time.Duration `yaml:"timeout"`
 }
 
+type HttpServer struct {
+	Host                string        `yaml:"host"`
+	Port                int           `yaml:"port"`
+	ComixUpdateInterval time.Duration `yaml:"comix-update-interval"`
+}
+
 type Config struct {
 	JSONIndex    `yaml:"json-index"`
 	JSONDatabase `yaml:"json-database"`
-	XKCDCom      `yaml:"xksd-com"`
+	XKCDCom      `yaml:"xkcd-com"`
+	HttpServer   `yaml:"http-server"`
 }
 
 func New(configPath string) (*Config, error) {
@@ -59,12 +66,10 @@ func New(configPath string) (*Config, error) {
 	}
 	defer file.Close()
 
-	d := yaml.NewDecoder(file)
-
-	if err := d.Decode(&config); err != nil {
+	if err := yaml.NewDecoder(file).Decode(&config); err != nil {
 		return nil, err
 	}
 
-	slog.Debug("config loaded", "config", config)
+	slog.Info("config loaded", "config", config)
 	return config, nil
 }

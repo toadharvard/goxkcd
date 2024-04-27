@@ -17,7 +17,7 @@ type XKCDRepo interface {
 	GetLastComixID(ctx context.Context) (int, error)
 }
 
-type DownloadComicsUC struct {
+type UseCase struct {
 	NumberOfWorkers int
 	BatchSize       int
 	comixRepo       ComixRepo
@@ -29,8 +29,8 @@ func New(
 	BatchSize int,
 	xkcdRepo XKCDRepo,
 	comixRepo ComixRepo,
-) *DownloadComicsUC {
-	return &DownloadComicsUC{
+) *UseCase {
+	return &UseCase{
 		NumberOfWorkers: NumberOfWorkers,
 		BatchSize:       BatchSize,
 		xkcdRepo:        xkcdRepo,
@@ -38,7 +38,7 @@ func New(
 	}
 }
 
-func (u *DownloadComicsUC) Run(ctx context.Context) (err error) {
+func (u *UseCase) Run(ctx context.Context) (err error) {
 	missingComixIDs := make(chan int)
 	batches := make(chan []entity.Comix)
 	go func() {
@@ -68,7 +68,7 @@ func (u *DownloadComicsUC) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-func (u *DownloadComicsUC) writeMissingIDs(ctx context.Context, missingComixIDs chan<- int) (err error) {
+func (u *UseCase) writeMissingIDs(ctx context.Context, missingComixIDs chan<- int) (err error) {
 	defer close(missingComixIDs)
 	limit, err := u.xkcdRepo.GetLastComixID(ctx)
 	if err != nil {
@@ -98,7 +98,7 @@ func (u *DownloadComicsUC) writeMissingIDs(ctx context.Context, missingComixIDs 
 	return nil
 }
 
-func (u *DownloadComicsUC) fetchComicsBatch(
+func (u *UseCase) fetchComicsBatch(
 	ctx context.Context,
 	IDsToFetch <-chan int,
 	batches chan<- []entity.Comix,

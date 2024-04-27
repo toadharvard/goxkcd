@@ -14,19 +14,19 @@ type ComixRepo interface {
 	GetAll() ([]entity.Comix, error)
 }
 
-type BuildIndexUC struct {
+type UseCase struct {
 	indexRepo IndexRepo
 	comixRepo ComixRepo
 }
 
-func New(indexRepo IndexRepo, comixRepo ComixRepo) *BuildIndexUC {
-	return &BuildIndexUC{
+func New(indexRepo IndexRepo, comixRepo ComixRepo) *UseCase {
+	return &UseCase{
 		indexRepo: indexRepo,
 		comixRepo: comixRepo,
 	}
 }
 
-func (u *BuildIndexUC) Run(ctx context.Context) (err error) {
+func (u *UseCase) Run(ctx context.Context) (err error) {
 	comics, err := u.comixRepo.GetAll()
 	if err != nil {
 		return

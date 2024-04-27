@@ -76,10 +76,10 @@ func (r *JsonRepo) Exists() bool {
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func (r *JsonRepo) Size() int {
+func (r *JsonRepo) Size() (int, error) {
 	comics, err := r.GetAll()
 	if err != nil {
-		return 0
+		return 0, err
 	}
-	return len(comics)
+	return len(comics), nil
 }
