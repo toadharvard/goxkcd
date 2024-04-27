@@ -26,7 +26,7 @@ type SuggestComixPicsResponse struct {
 
 type SuggestComixPicsRequest struct {
 	language iso6391.ISOCode6391
-	query    string
+	search   string
 	limit    int
 }
 
@@ -39,20 +39,20 @@ func NewSuggestComixPicsRequest(r *http.Request) (req SuggestComixPicsRequest, e
 		return
 	}
 
-	query := r.URL.Query().Get("query")
-	if query == "" {
+	search := r.URL.Query().Get("search")
+	if search == "" {
 		return
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 
 	if err != nil {
-		return
+		limit = 10
 	}
 
 	return SuggestComixPicsRequest{
 		language: language,
-		query:    query,
+		search:   search,
 		limit:    limit,
 	}, nil
 }
@@ -68,7 +68,7 @@ func SuggestComixPicsHandler(ctx context.Context, suggestComix *suggestComix.Use
 
 		comics, err := suggestComix.Run(
 			req.language,
-			req.query,
+			req.search,
 			req.limit,
 		)
 
