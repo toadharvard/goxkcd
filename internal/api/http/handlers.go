@@ -8,7 +8,6 @@ import (
 
 	"log/slog"
 
-	buildIndex "github.com/toadharvard/goxkcd/internal/usecase/buildindex"
 	countComics "github.com/toadharvard/goxkcd/internal/usecase/countcomics"
 	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
 	suggestComix "github.com/toadharvard/goxkcd/internal/usecase/suggestcomix"
@@ -106,7 +105,6 @@ type UpdateDatabaseAndIndexResponse struct {
 func UpdateDatabaseAndIndexHandler(
 	ctx context.Context,
 	downloadComics *downloadComics.UseCase,
-	buildIndex *buildIndex.UseCase,
 	countComics *countComics.UseCase,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -119,11 +117,6 @@ func UpdateDatabaseAndIndexHandler(
 		err = downloadComics.Run(ctx)
 		if err != nil {
 			slog.Error("comix download failed", "err", err)
-			return
-		}
-		err = buildIndex.Run(ctx)
-		if err != nil {
-			slog.Error("building index failed", "err", err)
 			return
 		}
 

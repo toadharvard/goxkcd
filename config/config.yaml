@@ -1,9 +1,3 @@
-json-database:
-  file-name: database.json
-
-json-index:
-  file-name: index.json
-
 xkcd-com:
   url: https://xkcd.com
   language: en

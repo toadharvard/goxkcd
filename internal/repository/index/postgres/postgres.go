@@ -70,15 +70,3 @@ func New(dsn string) (*PostgresRepo, error) {
 func (r *PostgresRepo) GetIndex() (entity.Index, error) {
 	return NewIndex(r.dsn)
 }
-
-func (r *PostgresRepo) CreateOrUpdate(i entity.Index) error {
-	// This method is a no-op, as the database will handle index updates automatically
-	// upon insertion of new Comix rows.
-	return nil
-}
-
-func (r *PostgresRepo) BuildFromComics([]entity.Comix) (entity.Index, error) {
-	// This method is a no-op, as the database will handle index updates automatically
-	// upon insertion of new Comix rows.
-	return NewIndex(r.dsn)
-}

@@ -28,14 +28,6 @@ func (code *ISOCode6391) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-type JSONDatabase struct {
-	FileName string `yaml:"file-name"`
-}
-
-type JSONIndex struct {
-	FileName string `yaml:"file-name"`
-}
-
 type XKCDCom struct {
 	URL             string        `yaml:"url"`
 	BatchSize       int           `yaml:"batch-size"`
@@ -56,11 +48,9 @@ type Postgres struct {
 }
 
 type Config struct {
-	JSONIndex    `yaml:"json-index"`
-	JSONDatabase `yaml:"json-database"`
-	XKCDCom      `yaml:"xkcd-com"`
-	HTTPServer   `yaml:"http-server"`
-	Postgres     `yaml:"postgres"`
+	XKCDCom    `yaml:"xkcd-com"`
+	HTTPServer `yaml:"http-server"`
+	Postgres   `yaml:"postgres"`
 }
 
 var DefaultConfigPath string = func() string {
@@ -92,9 +82,6 @@ func (c *Config) makePathAbsolute() error {
 		return err
 	}
 	root := findModuleRoot(currentFile)
-
-	c.JSONIndex.FileName = path.Join(root, c.JSONIndex.FileName)
-	c.JSONDatabase.FileName = path.Join(root, c.JSONIndex.FileName)
 	c.Postgres.Migrations = path.Join(root, c.Postgres.Migrations)
 	return nil
 }
