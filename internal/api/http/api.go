@@ -19,7 +19,6 @@ func SetupRoutes(ctx context.Context, app *app.App, mux *http.ServeMux) {
 		UpdateDatabaseAndIndexHandler(
 			ctx,
 			app.DownloadComicsUseCase,
-			app.BuildIndexUseCase,
 			app.CountComicsUseCase,
 		),
 	)
@@ -40,7 +39,7 @@ func Run(ctx context.Context, app *app.App, host string, port int, comixUpdateIn
 	}
 
 	// TODO: use cron jobs instead of ticker
-	go UpdateDatabaseAndIndexTask(ctx, app.BuildIndexUseCase, app.DownloadComicsUseCase, comixUpdateInterval)
+	go UpdateDatabaseAndIndexTask(ctx, app.DownloadComicsUseCase, comixUpdateInterval)
 
 	go func() {
 		<-ctx.Done()

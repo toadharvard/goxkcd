@@ -6,7 +6,6 @@ import (
 	comixRepo "github.com/toadharvard/goxkcd/internal/repository/comix/postgres"
 	xkcdRepo "github.com/toadharvard/goxkcd/internal/repository/comix/xkcd"
 	indexRepo "github.com/toadharvard/goxkcd/internal/repository/index/postgres"
-	buildIndex "github.com/toadharvard/goxkcd/internal/usecase/buildindex"
 	countComics "github.com/toadharvard/goxkcd/internal/usecase/countcomics"
 	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
 	suggestComix "github.com/toadharvard/goxkcd/internal/usecase/suggestcomix"
@@ -14,7 +13,6 @@ import (
 )
 
 type App struct {
-	BuildIndexUseCase     *buildIndex.UseCase
 	DownloadComicsUseCase *downloadComics.UseCase
 	SuggestComixUseCase   *suggestComix.UseCase
 	CountComicsUseCase    *countComics.UseCase
@@ -40,7 +38,6 @@ func New(cfg *config.Config) (app *App, err error) {
 	)
 
 	return &App{
-		BuildIndexUseCase: buildIndex.New(indexRepo, comixRepo),
 		DownloadComicsUseCase: downloadComics.New(
 			cfg.NumberOfWorkers,
 			cfg.BatchSize,
