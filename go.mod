@@ -11,7 +11,6 @@ require github.com/emvi/iso-639-1 v1.1.0
 
 require (
 	github.com/go-jet/jet/v2 v2.11.1
-	github.com/google/renameio v1.0.1
 	github.com/lib/pq v1.10.9
 	github.com/testcontainers/testcontainers-go v0.30.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.30.0
