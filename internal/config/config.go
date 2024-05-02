@@ -71,9 +71,6 @@ var DefaultConfigPath string = func() string {
 
 func findModuleRoot(dir string) string {
 	// Source: https://github.com/golang/go/blob/9e3b1d53a012e98cfd02de2de8b1bd53522464d4/src/cmd/go/internal/modload/init.go#L1504
-	if dir == "" {
-		panic("dir not set")
-	}
 	dir = filepath.Clean(dir)
 
 	for {
