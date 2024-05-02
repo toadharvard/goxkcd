@@ -1,4 +1,4 @@
-package countComics
+package countcomics
 
 type ComixRepo interface {
 	Size() (int, error)

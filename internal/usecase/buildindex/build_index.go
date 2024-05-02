@@ -1,4 +1,4 @@
-package buildIndex
+package buildindex
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 )
 
 type IndexRepo interface {
-	CreateOrUpdate(*entity.Index) error
+	BuildFromComics([]entity.Comix) (entity.Index, error)
+	CreateOrUpdate(entity.Index) error
 }
 
 type ComixRepo interface {
@@ -32,8 +33,10 @@ func (u *UseCase) Run(ctx context.Context) (err error) {
 		return
 	}
 
-	index := entity.NewIndexFromComics(comics)
-
+	index, err := u.indexRepo.BuildFromComics(comics)
+	if err != nil {
+		return
+	}
 	err = u.indexRepo.CreateOrUpdate(index)
 	return
 }

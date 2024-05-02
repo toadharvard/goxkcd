@@ -3,9 +3,9 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"time"
-
-	"log/slog"
 
 	"github.com/toadharvard/goxkcd/pkg/iso6391"
 	"gopkg.in/yaml.v3"
@@ -44,17 +44,62 @@ type XKCDCom struct {
 	Timeout         time.Duration `yaml:"timeout"`
 }
 
-type HttpServer struct {
+type HTTPServer struct {
 	Host                string        `yaml:"host"`
 	Port                int           `yaml:"port"`
 	ComixUpdateInterval time.Duration `yaml:"comix-update-interval"`
+}
+
+type Postgres struct {
+	DSN        string `yaml:"dsn"`
+	Migrations string `yaml:"migrations-path"`
 }
 
 type Config struct {
 	JSONIndex    `yaml:"json-index"`
 	JSONDatabase `yaml:"json-database"`
 	XKCDCom      `yaml:"xkcd-com"`
-	HttpServer   `yaml:"http-server"`
+	HTTPServer   `yaml:"http-server"`
+	Postgres     `yaml:"postgres"`
+}
+
+var DefaultConfigPath string = func() string {
+	currentFile, _ := filepath.Abs("./")
+	root := findModuleRoot(currentFile)
+	return path.Join(root, "config", "config.yaml")
+}()
+
+func findModuleRoot(dir string) string {
+	// Source: https://github.com/golang/go/blob/9e3b1d53a012e98cfd02de2de8b1bd53522464d4/src/cmd/go/internal/modload/init.go#L1504
+	if dir == "" {
+		panic("dir not set")
+	}
+	dir = filepath.Clean(dir)
+
+	for {
+		if fi, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil && !fi.IsDir() {
+			return dir
+		}
+		d := filepath.Dir(dir)
+		if d == dir {
+			break
+		}
+		dir = d
+	}
+	return ""
+}
+
+func (c *Config) makePathAbsolute() error {
+	currentFile, err := filepath.Abs("./")
+	if err != nil {
+		return err
+	}
+	root := findModuleRoot(currentFile)
+
+	c.JSONIndex.FileName = path.Join(root, c.JSONIndex.FileName)
+	c.JSONDatabase.FileName = path.Join(root, c.JSONIndex.FileName)
+	c.Postgres.Migrations = path.Join(root, c.Postgres.Migrations)
+	return nil
 }
 
 func New(configPath string) (*Config, error) {
@@ -70,6 +115,6 @@ func New(configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	slog.Info("config loaded", "config", config)
-	return config, nil
+	err = config.makePathAbsolute()
+	return config, err
 }

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/toadharvard/goxkcd/internal/usecase/buildIndex"
-	"github.com/toadharvard/goxkcd/internal/usecase/downloadComics"
+	buildIndex "github.com/toadharvard/goxkcd/internal/usecase/buildindex"
+	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
 )
 
 func UpdateDatabaseAndIndexTask(

@@ -2,15 +2,16 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"log/slog"
 
-	"github.com/toadharvard/goxkcd/internal/usecase/buildIndex"
-	"github.com/toadharvard/goxkcd/internal/usecase/countComics"
-	"github.com/toadharvard/goxkcd/internal/usecase/downloadComics"
-	"github.com/toadharvard/goxkcd/internal/usecase/suggestComix"
+	buildIndex "github.com/toadharvard/goxkcd/internal/usecase/buildindex"
+	countComics "github.com/toadharvard/goxkcd/internal/usecase/countcomics"
+	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
+	suggestComix "github.com/toadharvard/goxkcd/internal/usecase/suggestcomix"
 	"github.com/toadharvard/goxkcd/pkg/iso6391"
 )
 
@@ -30,18 +31,21 @@ type SuggestComixPicsRequest struct {
 	limit    int
 }
 
+var ErrMissingSearch = errors.New("missing search query")
+var ErrMissingLanguageCode = errors.New("missing language code query")
+
 func NewSuggestComixPicsRequest(r *http.Request) (req SuggestComixPicsRequest, err error) {
 	language, err := iso6391.NewLanguage(
 		r.URL.Query().Get("language"),
 	)
 
 	if err != nil {
-		return
+		return SuggestComixPicsRequest{}, ErrMissingLanguageCode
 	}
 
 	search := r.URL.Query().Get("search")
 	if search == "" {
-		return
+		return SuggestComixPicsRequest{}, ErrMissingSearch
 	}
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -61,8 +65,8 @@ func SuggestComixPicsHandler(ctx context.Context, suggestComix *suggestComix.Use
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := NewSuggestComixPicsRequest(r)
 		if err != nil {
-			err = Encode(w, r, http.StatusBadRequest, err.Error())
 			slog.Error("request failed", "err", err)
+			_ = Encode(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -73,8 +77,8 @@ func SuggestComixPicsHandler(ctx context.Context, suggestComix *suggestComix.Use
 		)
 
 		if err != nil {
-			err = Encode(w, r, http.StatusInternalServerError, err.Error())
 			slog.Error("comix suggestion failed", "err", err)
+			_ = Encode(w, r, http.StatusInternalServerError, err.Error())
 			return
 		}
 

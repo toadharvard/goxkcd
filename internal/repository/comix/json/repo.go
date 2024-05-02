@@ -12,16 +12,16 @@ import (
 
 var permissions fs.FileMode = 0644
 
-type JsonRepo struct {
+type JSONRepo struct {
 	filePath string
 }
 
-func New(filePath string) (repo *JsonRepo) {
-	repo = &JsonRepo{filePath: filePath}
+func New(filePath string) (repo *JSONRepo) {
+	repo = &JSONRepo{filePath: filePath}
 	return
 }
 
-func (r *JsonRepo) Create() error {
+func (r *JSONRepo) Create() error {
 	file, err := os.Create(r.filePath)
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func (r *JsonRepo) Create() error {
 	return err
 }
 
-func (r *JsonRepo) GetAll() ([]entity.Comix, error) {
+func (r *JSONRepo) GetAll() ([]entity.Comix, error) {
 	comics := []entity.Comix{}
 	file, err := os.Open(r.filePath)
 	if err != nil {
@@ -43,7 +43,7 @@ func (r *JsonRepo) GetAll() ([]entity.Comix, error) {
 	return comics, err
 }
 
-func (r *JsonRepo) GetByID(id int) (entity.Comix, error) {
+func (r *JSONRepo) GetByID(id int) (entity.Comix, error) {
 	comics, err := r.GetAll()
 	if err != nil {
 		return entity.Comix{}, err
@@ -56,7 +56,7 @@ func (r *JsonRepo) GetByID(id int) (entity.Comix, error) {
 	return entity.Comix{}, errors.New("comix not found")
 }
 
-func (r *JsonRepo) BulkInsert(toInsert []entity.Comix) error {
+func (r *JSONRepo) BulkInsert(toInsert []entity.Comix) error {
 	comics, err := r.GetAll()
 	if err != nil {
 		return err
@@ -71,12 +71,12 @@ func (r *JsonRepo) BulkInsert(toInsert []entity.Comix) error {
 	return renameio.WriteFile(r.filePath, bytes, permissions)
 }
 
-func (r *JsonRepo) Exists() bool {
+func (r *JSONRepo) Exists() bool {
 	_, err := os.Stat(r.filePath)
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func (r *JsonRepo) Size() (int, error) {
+func (r *JSONRepo) Size() (int, error) {
 	comics, err := r.GetAll()
 	if err != nil {
 		return 0, err

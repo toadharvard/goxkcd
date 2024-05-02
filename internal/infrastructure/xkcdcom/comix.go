@@ -1,4 +1,4 @@
-package xkcd
+package xkcdcom
 
 import (
 	"github.com/toadharvard/goxkcd/internal/entity"
@@ -27,7 +27,7 @@ func NewXKCDComix(language iso6391.ISOCode6391) *XKCDComix {
 	}
 }
 
-func (c *XKCDComix) ToComix() *entity.Comix {
+func (c *XKCDComix) ToComixEntity() *entity.Comix {
 	stemmer := stemming.New()
 	keywords := []stemming.Token{}
 	keywords = append(keywords, stemmer.StemString(c.SafeTitle, c.Language)...)

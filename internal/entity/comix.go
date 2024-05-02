@@ -13,3 +13,7 @@ func NewComix(id int, url string, keywords []string) *Comix {
 		Keywords: keywords,
 	}
 }
+
+type Comixer interface {
+	ToComixEntity() *Comix
+}

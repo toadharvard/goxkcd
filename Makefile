@@ -39,6 +39,7 @@ audit:
 	go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	go test -race -buildvcs -vet=off ./...
+	golangci-lint run
 
 .PHONY: test
 ## test: run all tests
@@ -58,13 +59,26 @@ build:
 	echo "Built /tmp/bin/${BINARY_NAME}"
 
 .PHONY: run
-## run: run the  application
+## run: run the application
 run: build
 	/tmp/bin/${BINARY_NAME} $(RUN_ARGS)
+
+## migrate/up: migrate database to latest migration
+migrate/up:
+	migrate -verbose -source file://internal/infrastructure/postgres/migrations -database postgres://user:password@localhost:5432/goxkcd?sslmode=disable up
+
+## migrate/down: downgrade database 
+migrate/down:
+	migrate -verbose -source file://internal/infrastructure/postgres/migrations -database postgres://user:password@localhost:5432/goxkcd?sslmode=disable down
+
+## gen/postgres: generate jet.io models from database schema 
+gen/postgres:
+	jet -source=postgres -dsn="postgres://user:password@localhost:5432/goxkcd?sslmode=disable" -path=./internal/infrastructure/postgres/gen
 
 .PHONY: bench
 ## bench: run benchmarks
 bench:
 	go test -bench=. ./... -v
+
 
 .DEFAULT_GOAL := build
