@@ -6,11 +6,16 @@ import (
 	"github.com/toadharvard/goxkcd/internal/entity"
 )
 
-type XKCDComixRepo struct {
-	client *XKCDClient
+type XKCDClient interface {
+	GetComixByID(ctx context.Context, id int) (entity.Comixer, error)
+	GetLastComix(ctx context.Context) (entity.Comixer, error)
 }
 
-func New(client *XKCDClient) *XKCDComixRepo {
+type XKCDComixRepo struct {
+	client XKCDClient
+}
+
+func New(client XKCDClient) *XKCDComixRepo {
 	return &XKCDComixRepo{
 		client: client,
 	}
@@ -21,9 +26,10 @@ func (r *XKCDComixRepo) GetByID(ctx context.Context, id int) (*entity.Comix, err
 	if err != nil {
 		return nil, err
 	}
-	return comix.ToComix(), nil
+	return comix.ToComixEntity(), nil
 }
 
-func (r *XKCDComixRepo) GetLastComixID(ctx context.Context) (id int, err error) {
-	return r.client.GetLastComixID(ctx)
+func (r *XKCDComixRepo) GetLastComix(ctx context.Context) (*entity.Comix, error) {
+	comix, err := r.client.GetLastComix(ctx)
+	return comix.ToComixEntity(), err
 }

@@ -2,13 +2,14 @@ package app
 
 import (
 	"github.com/toadharvard/goxkcd/internal/config"
-	comixRepo "github.com/toadharvard/goxkcd/internal/repository/comix/json"
+	"github.com/toadharvard/goxkcd/internal/infrastructure/xkcdcom"
+	comixRepo "github.com/toadharvard/goxkcd/internal/repository/comix/postgres"
 	xkcdRepo "github.com/toadharvard/goxkcd/internal/repository/comix/xkcd"
-	indexRepo "github.com/toadharvard/goxkcd/internal/repository/index/json"
-	"github.com/toadharvard/goxkcd/internal/usecase/buildIndex"
-	"github.com/toadharvard/goxkcd/internal/usecase/countComics"
-	"github.com/toadharvard/goxkcd/internal/usecase/downloadComics"
-	"github.com/toadharvard/goxkcd/internal/usecase/suggestComix"
+	indexRepo "github.com/toadharvard/goxkcd/internal/repository/index/postgres"
+	buildIndex "github.com/toadharvard/goxkcd/internal/usecase/buildindex"
+	countComics "github.com/toadharvard/goxkcd/internal/usecase/countcomics"
+	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
+	suggestComix "github.com/toadharvard/goxkcd/internal/usecase/suggestcomix"
 	"github.com/toadharvard/goxkcd/pkg/iso6391"
 )
 
@@ -21,22 +22,22 @@ type App struct {
 
 func New(cfg *config.Config) (app *App, err error) {
 	xkcdLang := iso6391.ISOCode6391(cfg.XKCDCom.Language)
-	comixRepo := comixRepo.New(cfg.JSONDatabase.FileName)
-	indexRepo := indexRepo.New(cfg.JSONIndex.FileName)
+	comixRepo, err := comixRepo.New(cfg.Postgres.DSN)
+	if err != nil {
+		return
+	}
+	indexRepo, err := indexRepo.New(cfg.Postgres.DSN)
+	if err != nil {
+		return
+	}
+
 	xkcdRepo := xkcdRepo.New(
-		xkcdRepo.NewXKCDClient(
+		xkcdcom.NewClient(
 			cfg.XKCDCom.URL,
 			xkcdLang,
 			cfg.XKCDCom.Timeout,
 		),
 	)
-
-	if !comixRepo.Exists() {
-		err = comixRepo.Create()
-		if err != nil {
-			return
-		}
-	}
 
 	return &App{
 		BuildIndexUseCase: buildIndex.New(indexRepo, comixRepo),

@@ -1,4 +1,4 @@
-package xkcd
+package xkcdcom
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/toadharvard/goxkcd/internal/entity"
 	"github.com/toadharvard/goxkcd/pkg/iso6391"
 )
 
@@ -16,7 +17,7 @@ type XKCDClient struct {
 	client   *http.Client
 }
 
-func NewXKCDClient(URL string, language iso6391.ISOCode6391, timeout time.Duration) *XKCDClient {
+func NewClient(URL string, language iso6391.ISOCode6391, timeout time.Duration) *XKCDClient {
 	client := &XKCDClient{
 		URL:      URL,
 		Language: language,
@@ -25,7 +26,7 @@ func NewXKCDClient(URL string, language iso6391.ISOCode6391, timeout time.Durati
 	return client
 }
 
-func (c *XKCDClient) GetComixByID(ctx context.Context, id int) (comix *XKCDComix, err error) {
+func (c *XKCDClient) GetComixByID(ctx context.Context, id int) (comix entity.Comixer, err error) {
 	comix = NewXKCDComix(c.Language)
 	URL := fmt.Sprintf("%s/%d/info.0.json", c.URL, id)
 
@@ -45,8 +46,8 @@ func (c *XKCDClient) GetComixByID(ctx context.Context, id int) (comix *XKCDComix
 	return comix, err
 }
 
-func (c *XKCDClient) GetLastComixID(ctx context.Context) (id int, err error) {
-	comix := NewXKCDComix(c.Language)
+func (c *XKCDClient) GetLastComix(ctx context.Context) (comix entity.Comixer, err error) {
+	comix = NewXKCDComix(c.Language)
 	URL := fmt.Sprintf("%s/info.0.json", c.URL)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
@@ -66,6 +67,5 @@ func (c *XKCDClient) GetLastComixID(ctx context.Context) (id int, err error) {
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(comix)
-	id = comix.Num
 	return
 }

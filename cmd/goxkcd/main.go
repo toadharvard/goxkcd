@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"time"
 
 	httpServer "github.com/toadharvard/goxkcd/internal/api/http"
 	"github.com/toadharvard/goxkcd/internal/app"
@@ -14,7 +13,7 @@ import (
 )
 
 func getValuesFromArgs() (string, string, int) {
-	configPath := flag.String("c", "config/config.yaml", "Config path")
+	configPath := flag.String("c", config.DefaultConfigPath, "Config path")
 	host := flag.String("h", "localhost", "Host")
 	port := flag.Int("p", 8080, "Port")
 	flag.Parse()
@@ -50,17 +49,17 @@ func run() error {
 		return err
 	}
 
-	host := cfg.HttpServer.Host
+	host := cfg.HTTPServer.Host
 	if hostArg != "" {
 		host = hostArg
 	}
 
-	port := cfg.HttpServer.Port
+	port := cfg.HTTPServer.Port
 	if portArg != 0 {
 		port = portArg
 	}
 
-	err = httpServer.Run(ctx, app, host, port, time.Minute)
+	err = httpServer.Run(ctx, app, host, port, cfg.ComixUpdateInterval)
 	return err
 }
 

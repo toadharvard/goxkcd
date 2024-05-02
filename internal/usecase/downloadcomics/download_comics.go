@@ -1,7 +1,8 @@
-package downloadComics
+package downloadcomics
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"github.com/toadharvard/goxkcd/internal/entity"
@@ -14,7 +15,7 @@ type ComixRepo interface {
 
 type XKCDRepo interface {
 	GetByID(ctx context.Context, id int) (*entity.Comix, error)
-	GetLastComixID(ctx context.Context) (int, error)
+	GetLastComix(ctx context.Context) (*entity.Comix, error)
 }
 
 type UseCase struct {
@@ -54,6 +55,7 @@ func (u *UseCase) Run(ctx context.Context) (err error) {
 			wg.Done()
 		}()
 	}
+
 	go func() {
 		wg.Wait()
 		close(batches)
@@ -61,6 +63,7 @@ func (u *UseCase) Run(ctx context.Context) (err error) {
 
 	for batch := range batches {
 		err = u.comixRepo.BulkInsert(batch)
+		slog.Info("comics inserted", "count", len(batch))
 		if err != nil {
 			return
 		}
@@ -70,7 +73,8 @@ func (u *UseCase) Run(ctx context.Context) (err error) {
 
 func (u *UseCase) writeMissingIDs(ctx context.Context, missingComixIDs chan<- int) (err error) {
 	defer close(missingComixIDs)
-	limit, err := u.xkcdRepo.GetLastComixID(ctx)
+	lastComix, err := u.xkcdRepo.GetLastComix(ctx)
+	limit := lastComix.ID
 	if err != nil {
 		return err
 	}

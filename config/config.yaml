@@ -15,3 +15,7 @@ http-server:
   host: localhost
   port: 8080
   comix-update-interval: 24h
+
+postgres:
+  dsn: postgres://user:password@localhost:5432/goxkcd?sslmode=disable
+  migrations-path: ./internal/infrastructure/postgres/migrations
