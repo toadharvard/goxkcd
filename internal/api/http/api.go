@@ -11,13 +11,12 @@ import (
 	"github.com/toadharvard/goxkcd/internal/app"
 )
 
-func SetupRoutes(ctx context.Context, app *app.App, mux *http.ServeMux) {
-	mux.HandleFunc("GET /ping", PingHandler(ctx))
-	mux.HandleFunc("GET /pics", SuggestComixPicsHandler(ctx, app.SuggestComixUseCase))
+func SetupRoutes(app *app.App, mux *http.ServeMux) {
+	mux.HandleFunc("GET /ping", PingHandler())
+	mux.HandleFunc("GET /pics", SuggestComixPicsHandler(app.SuggestComixUseCase))
 	mux.HandleFunc(
-		"GET /update",
+		"POST /update",
 		UpdateDatabaseAndIndexHandler(
-			ctx,
 			app.DownloadComicsUseCase,
 			app.CountComicsUseCase,
 		),
@@ -27,7 +26,7 @@ func SetupRoutes(ctx context.Context, app *app.App, mux *http.ServeMux) {
 func Run(ctx context.Context, app *app.App, host string, port int, comixUpdateInterval time.Duration) error {
 	mux := http.NewServeMux()
 
-	SetupRoutes(ctx, app, mux)
+	SetupRoutes(app, mux)
 
 	chain := MiddlewareChain(
 		LoggingMiddleware,
@@ -36,10 +35,13 @@ func Run(ctx context.Context, app *app.App, host string, port int, comixUpdateIn
 	server := http.Server{
 		Addr:    net.JoinHostPort(host, strconv.Itoa(port)),
 		Handler: chain(mux),
+		BaseContext: func(_ net.Listener) context.Context {
+			return ctx
+		},
 	}
 
 	// TODO: use cron jobs instead of ticker
-	go UpdateDatabaseAndIndexTask(ctx, app.DownloadComicsUseCase, comixUpdateInterval)
+	go UpdateDatabaseTask(ctx, app.DownloadComicsUseCase, comixUpdateInterval)
 
 	go func() {
 		<-ctx.Done()

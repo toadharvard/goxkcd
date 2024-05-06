@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"log/slog"
 
 	. "github.com/go-jet/jet/v2/postgres" //lint:ignore ST1001 pretty sql-like syntax
 	_ "github.com/lib/pq"
@@ -41,6 +42,7 @@ func (i *PostgresIndex) Search(token entity.Token) []int {
 
 	err := searchQuery.Query(i.db, &comixIDs)
 	if err != nil {
+		slog.Error("search query failed", "err", err)
 		return nil
 	}
 

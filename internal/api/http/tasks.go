@@ -8,7 +8,7 @@ import (
 	downloadComics "github.com/toadharvard/goxkcd/internal/usecase/downloadcomics"
 )
 
-func UpdateDatabaseAndIndexTask(
+func UpdateDatabaseTask(
 	ctx context.Context,
 	downloadComics *downloadComics.UseCase,
 	interval time.Duration,
