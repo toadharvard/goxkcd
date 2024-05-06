@@ -36,7 +36,8 @@ func (r *PostgresRepo) GetAll() ([]entity.Comix, error) {
 		table.Comix.AllColumns,
 		table.Keyword.Word,
 	).FROM(
-		table.Comix.INNER_JOIN(table.ComixToKeyword, table.Comix.ID.EQ(table.ComixToKeyword.ComixID)).
+		table.Comix.
+			INNER_JOIN(table.ComixToKeyword, table.Comix.ID.EQ(table.ComixToKeyword.ComixID)).
 			INNER_JOIN(table.Keyword, table.Keyword.ID.EQ(table.ComixToKeyword.KeywordID)),
 	)
 
@@ -64,7 +65,8 @@ func (r *PostgresRepo) GetByID(id int) (entity.Comix, error) {
 		table.Comix.AllColumns,
 		table.Keyword.Word,
 	).FROM(
-		table.Comix.INNER_JOIN(table.ComixToKeyword, table.Comix.ID.EQ(table.ComixToKeyword.ComixID)).
+		table.Comix.
+			INNER_JOIN(table.ComixToKeyword, table.Comix.ID.EQ(table.ComixToKeyword.ComixID)).
 			INNER_JOIN(table.Keyword, table.Keyword.ID.EQ(table.ComixToKeyword.KeywordID)),
 	).WHERE(
 		table.Comix.ID.EQ(ID),

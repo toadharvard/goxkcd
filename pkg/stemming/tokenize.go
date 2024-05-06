@@ -11,10 +11,10 @@ var alphanumericOnly = regexp.MustCompile(`[^\p{L}\p{N} ]+`)
 var wordSegmenter = regexp.MustCompile(`[\pL\p{Mc}\p{Mn}-_']+`)
 
 func Tokenize(str string) []Token {
-	words := strings.Fields(str)
+	onlyAlphanumeric := alphanumericOnly.ReplaceAllString(str, " ")
+	words := strings.Fields(onlyAlphanumeric)
 	splitted := strings.Join(words, " ")
-	onlyAlphanumeric := alphanumericOnly.ReplaceAllString(splitted, "")
-	words = wordSegmenter.FindAllString(onlyAlphanumeric, -1)
+	words = wordSegmenter.FindAllString(splitted, -1)
 	return words
 }
 

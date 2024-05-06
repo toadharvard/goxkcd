@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 	"github.com/toadharvard/goxkcd/pkg/iso6391"
 )
 
-func PingHandler(ctx context.Context) http.HandlerFunc {
+func PingHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = Encode(w, r, http.StatusOK, "pong")
 	}
@@ -31,15 +30,21 @@ type SuggestComixPicsRequest struct {
 }
 
 var ErrMissingSearch = errors.New("missing search query")
-var ErrMissingLanguageCode = errors.New("missing language code query")
+var ErrInvalidLanguageCode = errors.New("invalid language code query")
 
 func NewSuggestComixPicsRequest(r *http.Request) (req SuggestComixPicsRequest, err error) {
+	languageStr := r.URL.Query().Get("language")
+
+	if languageStr == "" {
+		languageStr = "en"
+	}
+
 	language, err := iso6391.NewLanguage(
-		r.URL.Query().Get("language"),
+		languageStr,
 	)
 
 	if err != nil {
-		return SuggestComixPicsRequest{}, ErrMissingLanguageCode
+		return SuggestComixPicsRequest{}, ErrInvalidLanguageCode
 	}
 
 	search := r.URL.Query().Get("search")
@@ -60,7 +65,7 @@ func NewSuggestComixPicsRequest(r *http.Request) (req SuggestComixPicsRequest, e
 	}, nil
 }
 
-func SuggestComixPicsHandler(ctx context.Context, suggestComix *suggestComix.UseCase) http.HandlerFunc {
+func SuggestComixPicsHandler(suggestComix *suggestComix.UseCase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := NewSuggestComixPicsRequest(r)
 		if err != nil {
@@ -77,7 +82,7 @@ func SuggestComixPicsHandler(ctx context.Context, suggestComix *suggestComix.Use
 
 		if err != nil {
 			slog.Error("comix suggestion failed", "err", err)
-			_ = Encode(w, r, http.StatusInternalServerError, err.Error())
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -103,7 +108,6 @@ type UpdateDatabaseAndIndexResponse struct {
 }
 
 func UpdateDatabaseAndIndexHandler(
-	ctx context.Context,
 	downloadComics *downloadComics.UseCase,
 	countComics *countComics.UseCase,
 ) http.HandlerFunc {
@@ -111,18 +115,21 @@ func UpdateDatabaseAndIndexHandler(
 		countBeforeUpdate, err := countComics.Run()
 		if err != nil {
 			slog.Error("failed to count", "err", err)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		err = downloadComics.Run(ctx)
+		err = downloadComics.Run(r.Context())
 		if err != nil {
 			slog.Error("comix download failed", "err", err)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
 		countAfterUpdate, err := countComics.Run()
 		if err != nil {
 			slog.Error("failed to count", "err", err)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
